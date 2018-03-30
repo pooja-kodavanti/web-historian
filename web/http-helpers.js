@@ -1,6 +1,10 @@
+
+
 var path = require('path');
 var fs = require('fs');
 var archive = require('../helpers/archive-helpers');
+var Promise = require('bluebird');
+var request = require('request');
 
 exports.headers = {
   'access-control-allow-origin': '*',
@@ -11,11 +15,51 @@ exports.headers = {
 };
 
 exports.serveAssets = function(res, asset, callback) {
-  // Write some code here that helps serve up your static files!
-  // (Static files are things like html (yours or archived from others...),
-  // css, or anything that doesn't change often.)
+
+ fs.readFile(path.join(archive.paths.siteAssets, asset), 'utf-8', function(err, data) {
+    if (!data) {
+      fs.readFile(path.join(archive.paths.archivedSites, asset), 'utf-8', function(err, data) {
+        if (!data) {
+          exports.sendResponse(res, '404: Page not found', 404);
+        } else {
+          exports.sendResponse(res, data);
+        }
+      });
+    } else {
+      exports.sendResponse(res, data);
+    }
+ });
 };
 
+exports.sendResponse = function(res, asset, statusCode) {
+  statusCode = statusCode || 200;
+  res.writeHead(statusCode, exports.headers);
+  res.end(asset);
+};
 
+exports.getData = function(req, callback) {
+  var data = '';
+  req.on('data', function(chunk) {
+    data += chunk;
+  });
+  req.on('end', function() {
+    callback(data);
+  });
+};
 
-// As you progress, keep thinking about what helper functions you can put here!
+// exports.makeActionHandler = function(actionMap) {
+//   return function(req, res) {
+//     var action = actionMap[req.method];
+//     if (action) {
+//       action(req, res);
+//     } else {
+//       exports.sendResponse(res, '', 404);
+//     }
+//   };
+// };
+
+// exports.sendRedirect = function(res, location, status) {
+//   status = status || 302;
+//   res.writeHead(status, {Location: location});
+//   res.end();
+// };
